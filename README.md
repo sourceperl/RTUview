@@ -6,7 +6,11 @@ RTU viewing monitor.
 
 ## Setup (for Linux):
 
-Perl module MBclient must be install.
+Perl module:
 
     pi@raspberrypi ~ $ sudo cpanm MBclient
+
+Python module:
+
+    pi@raspberrypi ~ $ sudo pip install pyModbusTCP
 

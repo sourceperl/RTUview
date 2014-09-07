@@ -1,8 +1,9 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
-# PSLS TM display
+# PSLS TS display
 
 use strict;
+use warnings;
 use MBclient;
 
 # create modbus object
