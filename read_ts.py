@@ -11,6 +11,7 @@ c = ModbusClient(host=SERVER_HOST, port=SERVER_PORT)
 
 if not c.open():
     print("unable to connect to "+SERVER_HOST+":"+str(SERVER_PORT))
+    sys.exit(1)
 
 # banner
 sys.stdout.write("----------------------------------------" + EOL)
