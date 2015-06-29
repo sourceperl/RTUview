@@ -21,7 +21,6 @@ poll_cycle = 0
 regs_lock = Lock()
 
 # parse args
-
 def _ports(port):
     """
     Validates argparse port argument.
@@ -76,14 +75,14 @@ args = parser.parse_args()
 # modbus polling thread
 def polling_thread():
     global regs, poll_cycle
-    c = ModbusClient(host=args.host, port=args.port)
+    c = ModbusClient(host=args.host, port=args.port, unit_id=args.unit_id)
     # polling loop
     while True:
         # keep TCP open
         if not c.is_open():
             c.open()
         # do modbus reading on socket
-        reg_list = c.read_holding_registers(0,10)
+        reg_list = c.read_holding_registers(20610,10)
         # if read is ok, store result in regs (with thread lock synchronization)
         with regs_lock:
             if reg_list:
