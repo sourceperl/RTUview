@@ -82,7 +82,7 @@ def polling_thread():
         if not c.is_open():
             c.open()
         # do modbus reading on socket
-        reg_list = c.read_holding_registers(20610,10)
+        reg_list = c.read_holding_registers(20610,20)
         # if read is ok, store result in regs (with thread lock synchronization)
         with regs_lock:
             if reg_list:
@@ -137,10 +137,14 @@ if __name__ == '__main__':
                 stdscr.addstr(2, 1, "FIX IS SET", curses.color_pair(1))
                 clone_regs = []
             # print banner
-            stdscr.addstr(5, 4, "----------------------------------------", curses.A_BOLD)
-            stdscr.addstr(6, 4, "NTS   0 0 0 0  0 0 0 0  0 1 1 1  1 1 1 1", curses.A_BOLD)
-            stdscr.addstr(7, 4, "      1 2 3 4  5 6 7 8  9 0 1 2  3 4 5 6", curses.A_BOLD)
-            stdscr.addstr(8, 4, "----------------------------------------", curses.A_BOLD)
+            stdscr.addstr(5, 4, "----------------------------------------",
+                          curses.A_BOLD)
+            stdscr.addstr(6, 4, "NTS   0 0 0 0  0 0 0 0  0 1 1 1  1 1 1 1",
+                          curses.A_BOLD)
+            stdscr.addstr(7, 4, "      1 2 3 4  5 6 7 8  9 0 1 2  3 4 5 6",
+                          curses.A_BOLD)
+            stdscr.addstr(8, 4, "----------------------------------------",
+                          curses.A_BOLD)
             # display data
             with regs_lock:
                 if not poll_cycle:
@@ -172,15 +176,16 @@ if __name__ == '__main__':
                     clone_bits = utils.get_bits_from_int(clone_regs[i],
                                                          val_size=16)
                     clone_bits.reverse()
-                    # bit value (1 or " ")
+                    # bit value (ts number or ".")
                     for x, bit in enumerate(bits):
+                        ts_label = str(x+1)[-1:]
                         if clone_bits[x] == bits[x]:
                             stdscr.addstr(c_line, c_cursor,
-                                          "1" if bit else ".",
+                                          ts_label if bit else ".",
                                           curses.A_NORMAL)
                         else:
                             stdscr.addstr(c_line, c_cursor,
-                                          "1" if bit else ".",
+                                          ts_label if bit else ".",
                                           curses.A_REVERSE)
                         c_cursor += 2
                         # every 4 chars set a whitespace
