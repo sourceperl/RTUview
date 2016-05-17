@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+from pyModbusTCP.client import ModbusClient
+import sys
+import argparse
+
+# some const
+DEF_MB_PORT = 502
+DEF_ID_ADDR = 26754
+
+# parse args
+parser = argparse.ArgumentParser()
+parser.add_argument('ip_rtu', type=str,
+                    help='RTU IPv4 address (like 127.0.0.1)')
+parser.add_argument('-p', '--port_rtu', type=int, default=502,
+                    help='RTU port (default is %d)' % DEF_MB_PORT)
+parser.add_argument('id_str', type=str,
+                    help='ID string')
+parser.add_argument('-id_a', '--id_addr', type=int, default=DEF_ID_ADDR,
+                    help='ID address (default is %d)' % DEF_ID_ADDR)
+args = parser.parse_args()
+
+# init modbus client
+c = ModbusClient(host=args.ip_rtu, port=args.port_rtu)
+
+# open TCP link
+if not c.open():
+    print("unable to connect to " + args.ip_rtu + ":" + str(args.port_rtu))
+    sys.exit(1)
+
+# format id list (8 chars max)
+id_list = [ord(x) for x in args.id_str.ljust(8)][:8]
+
+# do modbus write
+print('write ID %s at @%d' % (id_list, args.id_addr))
+regs = c.write_multiple_registers(args.id_addr, id_list)
+
+# print status
+if regs:
+    print('ok')
+else:
+    print('error')
+
+# close TCP link
+c.close()
