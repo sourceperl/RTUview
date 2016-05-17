@@ -15,7 +15,7 @@ parser.add_argument('-p', '--port_rtu', type=int, default=502,
                     help='RTU port (default is %d)' % DEF_MB_PORT)
 parser.add_argument('id_str', type=str,
                     help='ID string')
-parser.add_argument('-id_a', '--id_addr', type=int, default=DEF_ID_ADDR,
+parser.add_argument('-a', '--id_addr', type=int, default=DEF_ID_ADDR,
                     help='ID address (default is %d)' % DEF_ID_ADDR)
 args = parser.parse_args()
 
