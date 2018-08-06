@@ -9,16 +9,14 @@ from threading import Thread, Lock
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
 
-SERVER_HOST = "localhost"
-SERVER_PORT = 502
-
 # set global
-regs       = []
+regs = []
 clone_regs = []
 poll_cycle = 0
 
 # init a thread lock
 regs_lock = Lock()
+
 
 # parse args
 def _ports(port):
@@ -34,6 +32,7 @@ def _ports(port):
     except ValueError:
         raise argparse.ArgumentTypeError("Invalid range: " + port)
 
+
 def _unit_id(u_id):
     """
     Validates argparse unit-id argument.
@@ -47,6 +46,7 @@ def _unit_id(u_id):
     except ValueError:
         raise argparse.ArgumentTypeError("Invalid range: " + u_id)
 
+
 def _hostname(name):
     """
     Validates argparse hostname argument.
@@ -57,32 +57,30 @@ def _hostname(name):
         return name
     except socket.gaierror:
         raise argparse.ArgumentTypeError("Invalid hostname: " + name)
-    try:
-        socket.inet_aton(name)
-        return name
-    except socket.error:
-        raise argparse.ArgumentTypeError("Invalid ip address: " + name)
+    # try:
+    #     socket.inet_aton(name)
+    #     return name
+    # except socket.error:
+    #     raise argparse.ArgumentTypeError("Invalid ip address: " + name)
+
 
 parser = argparse.ArgumentParser(description="Modbus RTU test utility.")
-parser.add_argument("-H", "--host", default="localhost",
-                    type=_hostname, help="hostname or IP address")
-parser.add_argument("-P", "--port", default=502,
-                    type=_ports, help="a TCP port")
-parser.add_argument("-U", "--unit-id", default=1,
-                    type=_unit_id, help="modbus unit-id")
+parser.add_argument("host", type=_hostname, help="hostname or IP address")
+parser.add_argument("-p", "--port", default=502, type=_ports, help="TCP port")
+parser.add_argument("-u", "--unit-id", default=1, type=_unit_id, help="modbus unit-id")
+parser.add_argument("-a", "--address", default=0, type=int, help="table start address")
+parser.add_argument("-s", "--size", default=1, type=int, help="table size")
 args = parser.parse_args()
+
 
 # modbus polling thread
 def polling_thread():
     global regs, poll_cycle
-    c = ModbusClient(host=args.host, port=args.port, unit_id=args.unit_id)
+    client = ModbusClient(host=args.host, port=args.port, unit_id=args.unit_id, auto_open=True)
     # polling loop
     while True:
-        # keep TCP open
-        if not c.is_open():
-            c.open()
         # do modbus reading on socket
-        reg_list = c.read_holding_registers(20610,20)
+        reg_list = client.read_holding_registers(args.address, args.size)
         # if read is ok, store result in regs (with thread lock synchronization)
         with regs_lock:
             if reg_list:
@@ -90,23 +88,23 @@ def polling_thread():
                 poll_cycle += 1
             else:
                 poll_cycle = 0
-        # 1s before next polling
+        # next polling
         time.sleep(0.2)
 
+
 # start polling thread
-tp = Thread(target=polling_thread)
-# set daemon: polling thread will exit if main thread exit
-tp.daemon = True
-tp.start()
+Thread(target=polling_thread, daemon=True).start()
+
 
 def init_curses():
-    stdscr = curses.initscr()
+    l_stdscr = curses.initscr()
     curses.noecho()
     curses.cbreak()
     curses.curs_set(0)
-    stdscr.keypad(1)
-    stdscr.nodelay(1)
-    return stdscr
+    l_stdscr.keypad(1)
+    l_stdscr.nodelay(1)
+    return l_stdscr
+
 
 def close_curses(stdscr):
     stdscr.keypad(0)
@@ -114,47 +112,41 @@ def close_curses(stdscr):
     curses.echo()
     curses.endwin()
 
+
 def init_colors():
     curses.start_color()
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_GREEN)
 
+
 if __name__ == '__main__':
     try:
-        stdscr = init_curses()
+        std_scr = init_curses()
         init_colors()
 
         while True:
-            stdscr.erase()
-            stdscr.addstr(0, 1, "RTU Modbus real time", curses.A_BOLD)
-            stdscr.addstr(1, 1, "Host = %s, Port = %s, Unit ID = %s" 
-                                % (args.host, args.port, args.unit_id),
-                          curses.A_BOLD)
+            std_scr.erase()
+            std_scr.addstr(0, 1, "RTU Modbus/TCP real time", curses.A_BOLD)
+            std_scr.addstr(1, 1, "Host = %s, Port = %s, Unit ID = %s"
+                           % (args.host, args.port, args.unit_id),
+                           curses.A_BOLD)
             # non block get char (nodelay is set)
-            c = stdscr.getch()
+            c = std_scr.getch()
             # check "fix" request
             if (c == ord('f')) or (c == ord('F')):
-                stdscr.addstr(2, 1, "FIX IS SET", curses.color_pair(1))
+                std_scr.addstr(2, 1, "FIX IS SET", curses.color_pair(1))
                 clone_regs = []
             # print banner
-            stdscr.addstr(5, 4, "----------------------------------------",
-                          curses.A_BOLD)
-            stdscr.addstr(6, 4, "NTS   0 0 0 0  0 0 0 0  0 1 1 1  1 1 1 1",
-                          curses.A_BOLD)
-            stdscr.addstr(7, 4, "      1 2 3 4  5 6 7 8  9 0 1 2  3 4 5 6",
-                          curses.A_BOLD)
-            stdscr.addstr(8, 4, "----------------------------------------",
-                          curses.A_BOLD)
+            std_scr.addstr(5, 4, "-----------------------------------------", curses.A_BOLD)
+            std_scr.addstr(6, 4, "  @    1 1 1 1  1 1 0 0  0 0 0 0  0 0 0 0", curses.A_BOLD)
+            std_scr.addstr(7, 4, "       5 4 3 2  1 0 9 8  7 6 5 4  3 2 1 0", curses.A_BOLD)
+            std_scr.addstr(8, 4, "-----------------------------------------", curses.A_BOLD)
             # display data
             with regs_lock:
                 if not poll_cycle:
-                    stdscr.addstr(3, 4,
-                                  "link KO",
-                                  curses.color_pair(1))
+                    std_scr.addstr(3, 4, "link KO", curses.color_pair(1))
                 else:
-                    stdscr.addstr(3, 4,
-                                  "polling cycles: %s" % (str(poll_cycle)),
-                                  curses.A_BOLD)
+                    std_scr.addstr(3, 4, "polling cycles: %s" % (str(poll_cycle)), curses.A_BOLD)
                 # ensure clone is set
                 if regs and not clone_regs:
                     clone_regs = list(regs)
@@ -163,37 +155,31 @@ if __name__ == '__main__':
                 c_line = 9
                 for i, value in enumerate(regs):
                     # current cursor and line
-                    c_line  += 1
+                    c_line += 1
                     c_cursor = 4
                     # line name (ME or Txx)
-                    stdscr.addstr(c_line, c_cursor,
-                                  "ME    " if not i else "T%02d   " % i,
-                                  curses.A_BOLD)
+                    std_scr.addstr(c_line, c_cursor, "%-5d        " % (args.address + i), curses.A_BOLD)
                     c_cursor += 6
                     # builts bits list for regs and clone
                     bits = utils.get_bits_from_int(value, val_size=16)
                     bits.reverse()
-                    clone_bits = utils.get_bits_from_int(clone_regs[i],
-                                                         val_size=16)
+                    clone_bits = utils.get_bits_from_int(clone_regs[i], val_size=16)
                     clone_bits.reverse()
                     # bit value (ts number or ".")
                     for x, bit in enumerate(bits):
-                        ts_label = str(x+1)[-1:]
+                        ts_label = str(15 - x)[-1:]
                         if clone_bits[x] == bits[x]:
-                            stdscr.addstr(c_line, c_cursor,
-                                          ts_label if bit else ".",
-                                          curses.A_NORMAL)
+                            std_scr.addstr(c_line, c_cursor, ts_label if bit else ".", curses.A_NORMAL)
                         else:
-                            stdscr.addstr(c_line, c_cursor,
-                                          ts_label if bit else ".",
-                                          curses.A_REVERSE)
+                            std_scr.addstr(c_line, c_cursor, ts_label if bit else ".", curses.A_REVERSE)
                         c_cursor += 2
                         # every 4 chars set a whitespace
-                        if not (x+1)%4:
+                        if not (x + 1) % 4:
                             c_cursor += 1
             # refresh display, wait next
-            stdscr.refresh()
+            std_scr.refresh()
             time.sleep(0.2)
-
+    except curses.error:
+        exit("curses error: terminal need more lines ?")
     finally:
-        close_curses(stdscr)
+        close_curses(std_scr)

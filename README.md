@@ -1,16 +1,9 @@
 RTUview
 =======
 
-RTU viewing monitor.
+RTU viewing monitor (need python3)
 
 
 ## Setup (for Linux):
 
-Perl module:
-
-    pi@raspberrypi ~ $ sudo cpanm MBclient
-
-Python module:
-
-    pi@raspberrypi ~ $ sudo pip install pyModbusTCP
-
+    pi@raspberrypi ~ $ sudo python3 install setup.py
