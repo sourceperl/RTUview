@@ -158,8 +158,8 @@ if __name__ == '__main__':
                     c_line += 1
                     c_cursor = 4
                     # line name (ME or Txx)
-                    std_scr.addstr(c_line, c_cursor, "%-5d        " % (args.address + i), curses.A_BOLD)
-                    c_cursor += 6
+                    std_scr.addstr(c_line, c_cursor, "%-5d" % (args.address + i), curses.A_BOLD)
+                    c_cursor += 7
                     # builts bits list for regs and clone
                     bits = utils.get_bits_from_int(value, val_size=16)
                     bits.reverse()
@@ -180,6 +180,6 @@ if __name__ == '__main__':
             std_scr.refresh()
             time.sleep(0.2)
     except curses.error:
-        exit("curses error: terminal need more lines ?")
+        exit("curses error: terminal size is too short ?")
     finally:
         close_curses(std_scr)
